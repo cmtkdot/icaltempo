@@ -104,12 +104,14 @@ const CalendarViews = ({
   // Get carrier color
   const getCarrierColor = (carrier: string) => {
     const carrierColors: Record<string, string> = {
-      ups: "bg-amber-700",
-      fedex: "bg-purple-700",
-      usps: "bg-blue-700",
-      dhl: "bg-yellow-600",
+      ups: "bg-orange-500 border-orange-600",
+      fedex: "bg-purple-500 border-purple-600",
+      usps: "bg-blue-500 border-blue-600",
+      dhl: "bg-yellow-500 border-yellow-600",
     };
-    return carrierColors[carrier.toLowerCase()] || "bg-gray-500";
+    return (
+      carrierColors[carrier.toLowerCase()] || "bg-gray-500 border-gray-600"
+    );
   };
 
   // Get status color
@@ -119,6 +121,7 @@ const CalendarViews = ({
       inTransit: "bg-blue-500",
       pending: "bg-gray-400",
       delayed: "bg-red-500",
+      out_for_delivery: "bg-blue-500",
     };
     return statusColors[status] || "bg-gray-400";
   };
@@ -169,44 +172,46 @@ const CalendarViews = ({
               <div
                 key={dayIdx}
                 className={cn(
-                  "min-h-[100px] p-1 border border-border",
-                  !isCurrentMonth && "bg-muted/30 text-muted-foreground",
-                  isToday(day) && "bg-muted/50",
-                  "hover:bg-accent/10 cursor-pointer",
+                  "h-36 p-1.5 border-r border-b border-border cursor-pointer transition-colors hover:bg-muted/30",
+                  !isCurrentMonth && "text-muted-foreground/50",
+                  isToday(day) && "bg-primary/5",
                 )}
                 onClick={() => onDateSelect && onDateSelect(day)}
               >
-                <div className="flex justify-between items-center">
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      isToday(day) &&
-                        "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center",
-                    )}
-                  >
-                    {format(day, "d")}
-                  </span>
-                </div>
-                <div className="mt-1 space-y-1 max-h-[80px] overflow-hidden">
+                <span
+                  className={cn(
+                    "text-sm font-medium cursor-pointer",
+                    isToday(day) &&
+                      "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center",
+                    !isCurrentMonth && "text-muted-foreground",
+                  )}
+                >
+                  {format(day, "d")}
+                </span>
+                <div className="mt-1 space-y-1 max-h-[100px] overflow-hidden">
                   {dayEvents.slice(0, 3).map((event, idx) => (
                     <div
                       key={idx}
                       className={cn(
-                        "text-xs px-2 py-1 rounded truncate flex items-center gap-1",
+                        "text-xs p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 hover:shadow-sm",
                         getCarrierColor(event.carrier),
-                        "text-white",
+                        "text-white font-medium",
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick && onEventClick(event);
                       }}
                     >
-                      <span className="w-2 h-2 rounded-full bg-white"></span>
-                      <span className="truncate">{event.title}</span>
+                      <p className="font-semibold truncate">
+                        {event.carrier} Delivery
+                      </p>
+                      <p className="truncate opacity-90">
+                        #{event.trackingNumber.slice(-8)}
+                      </p>
                     </div>
                   ))}
                   {dayEvents.length > 3 && (
-                    <div className="text-xs text-muted-foreground pl-2">
+                    <div className="text-xs text-muted-foreground pl-2 font-medium">
                       +{dayEvents.length - 3} more
                     </div>
                   )}
@@ -473,37 +478,38 @@ const CalendarViews = ({
                       : format(eventDate, "h:mm a");
 
                     return (
-                      <Card
+                      <div
                         key={idx}
-                        className="p-3 hover:bg-accent/5 cursor-pointer"
+                        className="flex items-start gap-4 p-4 rounded-lg bg-card shadow-sm hover:shadow-md transition-all cursor-pointer border border-border/50"
                         onClick={() => onEventClick && onEventClick(event)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "w-3 h-3 rounded-full",
-                              getCarrierColor(event.carrier),
-                            )}
-                          ></div>
-                          <div className="flex-1">
-                            <div className="font-medium">{event.title}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-2">
-                              <span>{timeDisplay}</span>
-                              <span>•</span>
-                              <span>{event.trackingNumber}</span>
-                            </div>
-                          </div>
-                          <div
-                            className={cn(
-                              "text-xs px-2 py-1 rounded-full",
-                              getStatusColor(event.status),
-                              "text-white",
-                            )}
-                          >
-                            {event.status}
-                          </div>
+                        <div
+                          className={cn(
+                            "w-1.5 h-16 rounded-full flex-shrink-0",
+                            getCarrierColor(event.carrier),
+                          )}
+                        />
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">
+                            {event.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {timeDisplay}
+                          </p>
+                          <p className="text-sm mt-1 truncate font-mono text-xs bg-muted/50 px-2 py-1 rounded">
+                            #{event.trackingNumber}
+                          </p>
                         </div>
-                      </Card>
+                        <div
+                          className={cn(
+                            "text-xs px-2 py-1 rounded-full font-medium",
+                            getStatusColor(event.status),
+                            "text-white",
+                          )}
+                        >
+                          {event.status.replace("_", " ")}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -520,63 +526,28 @@ const CalendarViews = ({
   };
 
   return (
-    <div className="bg-background rounded-lg border border-border">
-      {/* Calendar Header */}
-      <div className="p-4 border-b border-border flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            {activeView === "month" && format(currentDate, "MMMM yyyy")}
-            {activeView === "week" &&
-              `Week of ${format(startOfWeek(currentDate), "MMM d")} - ${format(endOfWeek(currentDate), "MMM d, yyyy")}`}
-            {activeView === "day" && format(currentDate, "EEEE, MMMM d, yyyy")}
-            {activeView === "list" && "Shipping Events"}
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
-            </Button>
-            <Button variant="outline" size="sm" onClick={goToNextMonth}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+    <div className="bg-background">
+      {/* Desktop: Month Grid */}
+      <div className="hidden md:grid grid-cols-7 border-l border-t border-border rounded-lg overflow-hidden shadow-lg bg-card">
+        {/* Day Headers */}
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div
+            key={day}
+            className="text-center py-3 text-sm font-medium text-muted-foreground border-r border-b border-border"
+          >
+            {day}
           </div>
-        </div>
+        ))}
 
-        <Tabs
-          value={activeView}
-          onValueChange={setActiveView}
-          className="w-full"
-        >
-          <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto">
-            <TabsTrigger value="month" className="flex items-center gap-1">
-              <CalendarIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Month</span>
-            </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center gap-1">
-              <CalendarIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Week</span>
-            </TabsTrigger>
-            <TabsTrigger value="day" className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Day</span>
-            </TabsTrigger>
-            <TabsTrigger value="list" className="flex items-center gap-1">
-              <List className="h-4 w-4" />
-              <span className="hidden sm:inline">List</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Calendar Content */}
-      <div className="h-[calc(100vh-250px)] overflow-auto">
+        {/* Calendar Cells */}
         {activeView === "month" && renderMonthView()}
         {activeView === "week" && renderWeekView()}
         {activeView === "day" && renderDayView()}
         {activeView === "list" && renderListView()}
       </div>
+
+      {/* Mobile: Agenda View */}
+      <div className="md:hidden space-y-6">{renderListView()}</div>
     </div>
   );
 };

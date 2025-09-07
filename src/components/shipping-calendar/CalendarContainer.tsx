@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Menu,
+  Search,
+  User,
+} from "lucide-react";
 import {
   format,
   addMonths,
@@ -15,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import CalendarViews from "./CalendarViews";
 import EventDetailDialog from "./EventDetailDialog";
 import ICalImporter from "./ICalImporter";
+import Sidebar from "./Sidebar";
 
 type CalendarView = "month" | "week" | "day" | "list";
 
@@ -49,6 +58,7 @@ const CalendarContainer = ({
     null,
   );
   const [isImporterOpen, setIsImporterOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Sample events if none provided
   const sampleEvents: ShippingEvent[] =
@@ -182,64 +192,113 @@ const CalendarContainer = ({
   };
 
   return (
-    <Card className="w-full h-full bg-background border rounded-xl shadow-sm">
-      <div className="p-4 border-b">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={handlePrevious}>
-              <ChevronLeft className="h-4 w-4" />
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNewEvent={() => console.log("New event")}
+        onImportICal={() => setIsImporterOpen(true)}
+        events={sampleEvents}
+        onEventClick={handleEventClick}
+        currentDate={currentDate}
+        onDateSelect={setCurrentDate}
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col max-h-screen">
+        {/* Header */}
+        <header className="h-16 flex-shrink-0 bg-card border-b border-border flex items-center px-4 md:px-6 justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden text-muted-foreground"
+            >
+              <Menu className="w-6 h-6" />
             </Button>
-            <Button variant="outline" size="icon" onClick={handleNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" onClick={handleToday}>
-              Today
-            </Button>
-            <h2 className="text-xl font-semibold ml-2">{getDateRangeText()}</h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrevious}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNext}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleToday}>
+                Today
+              </Button>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold text-foreground">
+              {getDateRangeText()}
+            </h2>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2">
             <Tabs
               value={currentView}
               onValueChange={(value) => setCurrentView(value as CalendarView)}
-              className="w-full sm:w-auto"
+              className="hidden md:block"
             >
-              <TabsList>
-                <TabsTrigger value="month">Month</TabsTrigger>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="day">Day</TabsTrigger>
-                <TabsTrigger value="list">List</TabsTrigger>
+              <TabsList className="bg-secondary p-1">
+                <TabsTrigger value="day" className="px-3 py-1 text-sm">
+                  Day
+                </TabsTrigger>
+                <TabsTrigger value="week" className="px-3 py-1 text-sm">
+                  Week
+                </TabsTrigger>
+                <TabsTrigger value="month" className="px-3 py-1 text-sm">
+                  Month
+                </TabsTrigger>
+                <TabsTrigger value="list" className="px-3 py-1 text-sm">
+                  Agenda
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsImporterOpen(true)}
-              title="Import iCal Feed"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-4 ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+            </div>
           </div>
+        </header>
+
+        {/* Calendar Content */}
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+          <CalendarViews
+            view={currentView}
+            currentDate={currentDate}
+            events={sampleEvents}
+            onEventClick={handleEventClick}
+            viewRange={getViewRange()}
+          />
         </div>
-      </div>
+      </main>
 
-      <CardContent className="p-0 h-[calc(100%-4rem)]">
-        <CalendarViews
-          view={currentView}
-          currentDate={currentDate}
-          events={sampleEvents}
-          onEventClick={handleEventClick}
-          viewRange={getViewRange()}
-        />
-      </CardContent>
+      {/* Mobile FAB */}
+      <Button
+        onClick={() => console.log("New event")}
+        className="md:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-30"
+        size="icon"
+      >
+        <Plus className="w-8 h-8" />
+      </Button>
 
+      {/* Dialogs */}
       {selectedEvent && (
         <EventDetailDialog
           event={selectedEvent}
-          open={!!selectedEvent}
+          isOpen={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
-          onUpdate={handleEventUpdate}
+          onSave={handleEventUpdate}
         />
       )}
 
@@ -248,7 +307,7 @@ const CalendarContainer = ({
         onClose={() => setIsImporterOpen(false)}
         onImport={handleImport}
       />
-    </Card>
+    </div>
   );
 };
 
